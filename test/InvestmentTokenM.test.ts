@@ -28,6 +28,14 @@ describe("InvestmentTokenM Contract", () => {
     it("Should assign the total supply of tokens to the owner", async () => {
       expect(await token.balanceOf(OWNER.address)).to.equal(ONE_MILLION);
     });
+
+    it("Should reject a registry address without contract code", async () => {
+      const Token = await ethers.getContractFactory("InvestmentTokenM");
+
+      await expect(Token.deploy("Investment Token", "ITK", ADDR1.address)).to.be.revertedWith(
+        "ERC20AllowListableProxy: registry must be contract"
+      );
+    });
   });
 
   describe("ERC20Mintable", () => {
@@ -84,6 +92,15 @@ describe("InvestmentTokenM Contract", () => {
         expect(await token.balanceOf(OWNER.address)).to.equal(ONE_MILLION);
       });
 
+      it("Should adminTransfer bypass pause for the owner", async () => {
+        await token.pause();
+
+        await token.adminTransfer(OWNER.address, ADDR1.address, ONE_THOUSAND);
+
+        expect(await token.balanceOf(OWNER.address)).to.equal(ONE_MILLION - ONE_THOUSAND);
+        expect(await token.balanceOf(ADDR1.address)).to.equal(ONE_THOUSAND);
+      });
+
       it("Should adminTransfer failed when amount exceeds balance", async () => {
         await expect(token.adminTransfer(ADDR2.address, ADDR1.address, ONE_THOUSAND)).to.be.revertedWith(
           "ERC20: transfer amount exceeds balance"
@@ -96,29 +113,38 @@ describe("InvestmentTokenM Contract", () => {
         );
       });
     });
+  });
 
-    describe("adminBurn", () => {
-      it("Should adminBurn when sender is the owner", async () => {
-        await token.adminTransfer(OWNER.address, ADDR1.address, ONE_THOUSAND);
+  describe("ERC20Burnable", () => {
+    it("Should let a holder burn its own tokens", async () => {
+      await token.transfer(ADDR1.address, ONE_THOUSAND);
+      await registry.addAllowlist(ADDR1.address);
 
-        expect(await token.balanceOf(ADDR1.address)).to.equal(ONE_THOUSAND);
+      await token.connect(ADDR1).burn(ONE_THOUSAND);
 
-        await token.adminBurn(ADDR1.address, ONE_THOUSAND);
+      expect(await token.balanceOf(ADDR1.address)).to.equal(0);
+      expect(await token.totalSupply()).to.equal(ONE_MILLION - ONE_THOUSAND);
+    });
 
-        expect(await token.balanceOf(ADDR1.address)).to.equal(0);
-      });
+    it("Should let an approved spender burnFrom a holder", async () => {
+      await token.transfer(ADDR1.address, ONE_THOUSAND);
+      await registry.addAllowlist(ADDR1.address);
+      await registry.addAllowlist(ADDR2.address);
+      await token.connect(ADDR1).approve(ADDR2.address, ONE_THOUSAND);
 
-      it("Should adminBurn failed when amount exceeds balance", async () => {
-        await expect(token.adminBurn(ADDR1.address, ONE_THOUSAND)).to.be.revertedWith(
-          "ERC20: burn amount exceeds balance"
-        );
-      });
+      await token.connect(ADDR2).burnFrom(ADDR1.address, ONE_THOUSAND);
 
-      it("Should adminBurn failed when sender is not the owner", async () => {
-        await expect(token.connect(ADDR1).adminBurn(ADDR2.address, ONE_THOUSAND)).to.be.revertedWith(
-          "Ownable: caller is not the owner"
-        );
-      });
+      expect(await token.balanceOf(ADDR1.address)).to.equal(0);
+      expect(await token.totalSupply()).to.equal(ONE_MILLION - ONE_THOUSAND);
+    });
+
+    it("Should let the owner perform the original administrative burn", async () => {
+      await token.transfer(ADDR1.address, ONE_THOUSAND);
+
+      await token.adminBurn(ADDR1.address, ONE_THOUSAND);
+
+      expect(await token.balanceOf(ADDR1.address)).to.equal(0);
+      expect(await token.totalSupply()).to.equal(ONE_MILLION - ONE_THOUSAND);
     });
   });
 
@@ -181,6 +207,7 @@ describe("InvestmentTokenM Contract", () => {
       await registry.addAllowlist(ADDR2.address);
 
       await token.connect(ADDR1).approve(ADDR2.address, ONE_THOUSAND);
+
       await registry.removeAllowlist(ADDR1.address);
 
       await expect(token.connect(ADDR2).transferFrom(ADDR1.address, ADDR2.address, ONE_THOUSAND)).to.be.revertedWith(
@@ -218,6 +245,7 @@ describe("InvestmentTokenM Contract", () => {
       await registry.addAllowlist(ADDR2.address);
 
       await registry.removeAllowlist(ADDR1.address);
+
       await expect(token.connect(ADDR1).approve(ADDR2.address, ONE_THOUSAND)).to.be.revertedWith(
         "InvestmentTokenM: account are not allowlisted"
       );
@@ -228,6 +256,7 @@ describe("InvestmentTokenM Contract", () => {
       await registry.addAllowlist(ADDR2.address);
 
       await registry.removeAllowlist(ADDR2.address);
+
       await expect(token.connect(ADDR1).approve(ADDR2.address, ONE_THOUSAND)).to.be.revertedWith(
         "InvestmentTokenM: account are not allowlisted"
       );
@@ -293,92 +322,6 @@ describe("InvestmentTokenM Contract", () => {
 
       await registry.removeAllowlist(ADDR2.address);
       await expect(token.connect(ADDR1).decreaseAllowance(ADDR2.address, ONE_THOUSAND)).to.be.revertedWith(
-        "InvestmentTokenM: account are not allowlisted"
-      );
-    });
-  });
-
-  describe("Burnable", () => {
-    it("Should burn tokens on the owner", async () => {
-      await token.burn(0);
-
-      expect(await token.balanceOf(OWNER.address)).to.equal(ONE_MILLION);
-
-      await token.burn(ONE_MILLION);
-
-      expect(await token.balanceOf(OWNER.address)).to.equal(0);
-    });
-
-    it("Should burn tokens on allowlisted account", async () => {
-      await token.transfer(ADDR1.address, ONE_THOUSAND);
-      await registry.addAllowlist(ADDR1.address);
-
-      await token.connect(ADDR1).burn(ONE_THOUSAND);
-
-      expect(await token.balanceOf(ADDR1.address)).to.equal(0);
-    });
-
-    it("Should burn tokens failed when account are not allowlisted", async () => {
-      await token.transfer(ADDR1.address, ONE_THOUSAND);
-
-      await expect(token.connect(ADDR1).burn(ONE_THOUSAND)).to.be.revertedWith(
-        "InvestmentTokenM: account are not allowlisted"
-      );
-    });
-
-    it("Should burn tokens failed when amount exceeds balance", async () => {
-      await registry.addAllowlist(ADDR1.address);
-      await expect(token.connect(ADDR1).burn(ONE_MILLION)).to.be.revertedWith("ERC20: burn amount exceeds balance");
-    });
-
-    it("Should burnFrom tokens from given allowance", async () => {
-      await token.transfer(ADDR1.address, ONE_THOUSAND);
-      await registry.addAllowlist(ADDR1.address);
-      await registry.addAllowlist(ADDR2.address);
-
-      await token.connect(ADDR1).approve(ADDR2.address, ONE_THOUSAND);
-
-      await token.connect(ADDR2).burnFrom(ADDR1.address, ONE_THOUSAND);
-
-      expect(await token.balanceOf(ADDR1.address)).to.equal(0);
-    });
-
-    it("Should burnFrom given allowance less than burn amounts failed", async () => {
-      await token.transfer(ADDR1.address, ONE_THOUSAND);
-      await registry.addAllowlist(ADDR1.address);
-      await registry.addAllowlist(ADDR2.address);
-
-      await token.connect(ADDR1).approve(ADDR2.address, ONE_THOUSAND);
-
-      await expect(token.connect(ADDR2).burnFrom(ADDR1.address, ONE_MILLION)).to.be.revertedWith(
-        "ERC20: insufficient allowance"
-      );
-    });
-
-    it("Should burnFrom failed when spender are not allowlisted account", async () => {
-      await token.transfer(ADDR1.address, ONE_THOUSAND);
-      await registry.addAllowlist(ADDR1.address);
-      await registry.addAllowlist(ADDR2.address);
-
-      await token.connect(ADDR1).approve(ADDR2.address, ONE_THOUSAND);
-
-      await registry.removeAllowlist(ADDR2.address);
-
-      await expect(token.connect(ADDR2).burnFrom(ADDR1.address, ONE_MILLION)).to.be.revertedWith(
-        "InvestmentTokenM: account are not allowlisted"
-      );
-    });
-
-    it("Should burnFrom failed when owner are not allowlisted account", async () => {
-      await token.transfer(ADDR1.address, ONE_THOUSAND);
-      await registry.addAllowlist(ADDR1.address);
-      await registry.addAllowlist(ADDR2.address);
-
-      await token.connect(ADDR1).approve(ADDR2.address, ONE_THOUSAND);
-
-      await registry.removeAllowlist(ADDR1.address);
-
-      await expect(token.connect(ADDR2).burnFrom(ADDR1.address, ONE_MILLION)).to.be.revertedWith(
         "InvestmentTokenM: account are not allowlisted"
       );
     });
@@ -533,7 +476,7 @@ describe("InvestmentTokenM Contract", () => {
       it("Should transfer success with max transfer limit", async () => {
         await registry.addAllowlist(ADDR1.address);
         await registry.addAllowlist(ADDR2.address);
-        await token.transfer(ADDR1, ONE_THOUSAND);
+        await token.transfer(ADDR1.address, ONE_THOUSAND);
         await token.setTransferLimit(ADDR1.address, ONE_THOUSAND);
         await token.connect(ADDR1).transfer(ADDR2.address, ONE_THOUSAND);
 
@@ -547,7 +490,7 @@ describe("InvestmentTokenM Contract", () => {
 
         await registry.addAllowlist(ADDR1.address);
         await registry.addAllowlist(ADDR2.address);
-        await token.transfer(ADDR1, ONE_THOUSAND);
+        await token.transfer(ADDR1.address, ONE_THOUSAND);
         await token.setTransferLimit(ADDR1.address, ONE_THOUSAND);
         await token.connect(ADDR1).transfer(ADDR2.address, ONE_HUNDRED);
 
@@ -558,7 +501,7 @@ describe("InvestmentTokenM Contract", () => {
       it("Should transfer failed with exceeds transfer limit", async () => {
         await registry.addAllowlist(ADDR1.address);
         await registry.addAllowlist(ADDR2.address);
-        await token.transfer(ADDR1, ONE_THOUSAND);
+        await token.transfer(ADDR1.address, ONE_THOUSAND);
         await token.setTransferLimit(ADDR1.address, ONE_THOUSAND);
 
         await expect(token.connect(ADDR1).transfer(ADDR2.address, ONE_MILLION)).to.be.revertedWith(
@@ -625,19 +568,17 @@ describe("InvestmentTokenM Contract", () => {
   describe("ERC20AllowListableProxy", () => {
     describe("setAllowlistRegistry", () => {
       it("Should setAllowlistRegistry", async () => {
-        const Registry = await ethers.getContractFactory("AllowlistRegistry");
-        const registry = await Registry.deploy();
+        const RandomToken = await ethers.getContractFactory("InvestmentTokenM");
         const registryAddr = await registry.getAddress();
+        const dummyToken = await RandomToken.deploy("Dummy", "DUM", registryAddr);
 
-        await token.setAllowlistRegistry(registryAddr);
-        expect(await token.allowlistRegistry()).to.equal(registryAddr);
+        await token.setAllowlistRegistry(await dummyToken.getAddress());
+
+        expect(await token.allowlistRegistry()).to.equal(await dummyToken.getAddress());
       });
 
       it("Should setAllowlistRegistry failed when sender is not the owner", async () => {
-        const Registry = await ethers.getContractFactory("AllowlistRegistry");
-        const registry = await Registry.deploy();
         const registryAddr = await registry.getAddress();
-
         await expect(token.connect(ADDR1).setAllowlistRegistry(registryAddr)).to.be.revertedWith(
           "Ownable: caller is not the owner"
         );

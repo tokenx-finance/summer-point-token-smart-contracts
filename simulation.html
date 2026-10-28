@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCBAM tMMF // 5-Day Operational Lifecycle Simulation Visualizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #080c14;
+      --bg-card: #0f172a;
+      --bg-card-hover: #1e293b;
+      --border-color: #1e293b;
+      --border-bright: #334155;
+      --accent-cyan: #06b6d4;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+    }
+
+    /* TOP HEADER */
+    header {
+      padding: 16px 32px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #000;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .header-subtitle {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--accent-green);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 10px var(--accent-green);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+    }
+
+    /* TIMELINE CONTROLLER */
+    .timeline-bar {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .days-nav {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .day-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-bright);
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .day-btn:hover {
+      background: #334155;
+      color: var(--text-main);
+    }
+
+    .day-btn.active {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2));
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+    }
+
+    .playback-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .ctrl-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-bright);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .ctrl-btn:hover {
+      background: #334155;
+    }
+
+    .ctrl-btn.primary {
+      background: var(--accent-cyan);
+      color: #000;
+      border-color: var(--accent-cyan);
+    }
+
+    .ctrl-btn.primary:hover {
+      background: #22d3ee;
+    }
+
+    /* MAIN CONTENT LAYOUT */
+    .app-body {
+      flex: 1;
+      padding: 24px 32px;
+      display: grid;
+      grid-template-columns: 360px 1fr 400px;
+      gap: 20px;
+      max-width: 1800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* CARDS */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 18px;
+      background: rgba(30, 41, 59, 0.4);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-body {
+      padding: 18px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    /* DAY NARRATIVE & STAGE DESCRIPTION */
+    .stage-card {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+      border: 1px solid var(--border-bright);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .stage-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .stage-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .stage-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .event-bullet {
+      font-size: 12px;
+      color: var(--text-main);
+      padding: 8px 12px;
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 3px solid var(--accent-cyan);
+      border-radius: 0 6px 6px 0;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    /* METRICS HUD */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric-card {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-bottom: 4px;
+    }
+
+    .metric-val {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--accent-cyan);
+    }
+
+    /* INVARIANT GAUGE */
+    .invariant-box {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .invariant-title {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--accent-green);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .invariant-status {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    .invariant-math {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      margin-top: 4px;
+    }
+
+    /* WALLET TABLE */
+    .wallet-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .wallet-table th {
+      text-align: left;
+      padding: 8px 10px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .wallet-table td {
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+    }
+
+    .user-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .broker-tag {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .tag-innovestx { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .tag-dime { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .tag-scbam { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .balance-num {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .yield-badge {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--accent-green);
+      background: rgba(16, 185, 129, 0.15);
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: 4px;
+    }
+
+    /* FIFO QUEUE CONTAINER */
+    .queue-stream {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 10px 0;
+      margin-bottom: 16px;
+    }
+
+    .queue-item {
+      background: #1e293b;
+      border: 1px solid var(--border-bright);
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-width: 140px;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .queue-item.pending {
+      border-color: var(--accent-yellow);
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .queue-item.cancelled {
+      border-color: var(--accent-red);
+      background: rgba(239, 68, 68, 0.08);
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
+
+    .queue-item.success {
+      border-color: var(--accent-green);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .queue-tag {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .queue-amount {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      margin-top: 4px;
+    }
+
+    /* CONSOLE LOG */
+    .console-feed {
+      background: #050811;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      height: 380px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .log-line {
+      line-height: 1.4;
+      display: flex;
+      gap: 8px;
+    }
+
+    .log-time { color: var(--text-muted); }
+    .log-ev-req { color: var(--accent-yellow); }
+    .log-ev-ok { color: var(--accent-green); }
+    .log-ev-sec { color: var(--accent-purple); }
+    .log-ev-nav { color: var(--accent-cyan); }
+    .log-ev-burn { color: var(--accent-red); }
+
+    /* ANIMATIONS & HIGHLIGHTS */
+    .flash-update {
+      animation: highlightFlash 1s ease-out;
+    }
+
+    @keyframes highlightFlash {
+      0% { background-color: rgba(6, 182, 212, 0.3); }
+      100% { background-color: transparent; }
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--accent-cyan);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 1200px) {
+      header, .timeline-bar { align-items: flex-start; flex-wrap: wrap; }
+      .days-nav, .playback-controls { width: 100%; overflow-x: auto; }
+      .day-btn, .ctrl-btn { flex: 0 0 auto; }
+      .app-body { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      header, .timeline-bar, .app-body { padding: 14px; }
+      .header-title { font-size: 16px; }
+      .logo-badge { white-space: nowrap; }
+      .playback-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+      .ctrl-btn { justify-content: center; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .panel-body { overflow-x: auto; }
+      .console-feed { height: min(380px, 55vh); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-group">
+      <div class="logo-badge">TOKEN X</div>
+      <div>
+        <div class="header-title">SCBAM Tokenized Mutual Fund (tMMF)</div>
+        <div class="header-subtitle">5-Day Operational Lifecycle Demonstration</div>
+      </div>
+    </div>
+
+    <div class="status-pill">
+      <div class="pulse-dot"></div>
+      <span id="liveStatus">STATIC DEMO DATA · NOT CONNECTED ON-CHAIN</span>
+    </div>
+  </header>
+
+  <!-- TIMELINE CONTROLLER -->
+  <div class="timeline-bar">
+    <div class="days-nav">
+      <button class="day-btn active" onclick="setDay(0)" id="btnDay0">📅 DAY 0: Setup</button>
+      <button class="day-btn" onclick="setDay(1)" id="btnDay1">📥 DAY 1: Subscriptions</button>
+      <button class="day-btn" onclick="setDay(2)" id="btnDay2">🔄 DAY 2: P2P Secondary</button>
+      <button class="day-btn" onclick="setDay(3)" id="btnDay3">📈 DAY 3: NAV Yield</button>
+      <button class="day-btn" onclick="setDay(4)" id="btnDay4">🔥 DAY 4: Redemptions</button>
+      <button class="day-btn" onclick="setDay(5)" id="btnDay5">🧮 DAY 5: Final Audit</button>
+    </div>
+
+    <div class="playback-controls">
+      <button class="ctrl-btn" onclick="prevStep()">◀ Prev Step</button>
+      <button class="ctrl-btn primary" onclick="nextStep()" id="playNextBtn">Next Step ▶</button>
+      <button class="ctrl-btn" onclick="autoPlay()" id="autoBtn">⚡ Auto Play</button>
+      <button class="ctrl-btn" onclick="resetSim()">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- MAIN SIMULATOR BODY -->
+  <div class="app-body">
+
+    <!-- LEFT PANEL: TIMELINE & CURRENT STAGE NARRATIVE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📖 OPERATIONAL STAGE LOG</div>
+        <span class="badge-tag" style="background:#1e293b; color:var(--accent-cyan); padding:2px 8px; border-radius:4px; font-size:11px; font-family:var(--font-mono);" id="currentDayBadge">DAY 0 / 5</span>
+      </div>
+
+      <div class="panel-body">
+        <div class="stage-card">
+          <span class="stage-badge" id="stageBadgeStyle" style="background:rgba(6, 182, 212, 0.2); color:var(--accent-cyan);">STAGE 0 // ONBOARDING</span>
+          <div class="stage-title" id="stageTitle">Deployment & Topology Setup</div>
+          <div class="stage-desc" id="stageDesc">
+            SCBAM Treasury deploys InvestmentTokenM and FundController. Token X deploys AllowlistRegistryProxyV2 and FundComplianceHook. InnovestX and Dime onboard verified KYC investor wallets.
+          </div>
+          <div class="event-bullet" id="eventBullet">
+            SCBAM mints 5,000,000.00 tMMF. 1,000,000.00 tMMF allocated to InnovestX and Dime isolated reserve pools.
+          </div>
+        </div>
+
+        <!-- BROKER RESERVES BREAKDOWN -->
+        <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:8px; font-weight:700;">BROKER LIQUIDITY BUFFERS</div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-label">INNOVESTX BUFFER</div>
+            <div class="metric-val" id="innovestXBuffer">1,000,000</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">DIME BUFFER</div>
+            <div class="metric-val" id="dimeBuffer" style="color:var(--accent-purple);">1,000,000</div>
+          </div>
+        </div>
+
+        <!-- ACTIVE BROKER SHARES -->
+        <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:8px; font-weight:700;">ACTIVE SHARES BY BROKER</div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-label">INNOVESTX SHARES</div>
+            <div class="metric-val" id="innovestXShares">0.00</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">DIME SHARES</div>
+            <div class="metric-val" id="dimeShares" style="color:var(--accent-purple);">0.00</div>
+          </div>
+        </div>
+
+        <!-- INVARIANT CONSERVATION GAUGE -->
+        <div class="invariant-box">
+          <div class="invariant-title">🛡️ 1:1 CONSERVATION INVARIANT AUDIT</div>
+          <div class="invariant-status" id="invariantStatus">EXACT 0 WEI ERROR ✅</div>
+          <div class="invariant-math" id="invariantMath">Total Supply = Treasury (5.0M) + Shares (0) + Vault (0)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL: LIVE PARTICIPANT LEDGERS & FIFO DEQUE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">👥 SIMULATED PARTICIPANT LEDGERS</div>
+        <span style="font-size:11px; font-family:var(--font-mono); color:var(--accent-green);" id="totalActiveSharesLabel">TOTAL SHARES: 0.00 tMMF</span>
+      </div>
+
+      <div class="panel-body">
+        
+        <!-- FIFO DEQUE VISUALIZER -->
+        <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:4px; font-weight:700; display:flex; justify-content:space-between;">
+          <span>📥 DAY T FIFO SUBSCRIPTION QUEUE (OpenZeppelin DoubleEndedQueue)</span>
+          <span id="queueLengthBadge" style="color:var(--accent-yellow);">Queue Length: 0</span>
+        </div>
+
+        <div class="queue-stream" id="queueStream">
+          <div style="font-size:12px; color:var(--text-muted); padding:10px 0; font-family:var(--font-mono);">[ Queue is currently empty. Next dealing batch opens on Day 1 ]</div>
+        </div>
+
+        <!-- WALLET TABLE -->
+        <table class="wallet-table">
+          <thead>
+            <tr>
+              <th>PARTICIPANT</th>
+              <th>BROKER</th>
+              <th>KYC STATUS</th>
+              <th>HOLDING BALANCE</th>
+              <th>DAILY YIELD</th>
+            </tr>
+          </thead>
+          <tbody id="walletTableBody">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: SIMULATED SOLIDITY EVENT EMISSIONS & AUDIT LOG -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">⚡ SIMULATED EVENT STREAM</div>
+        <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">DETERMINISTIC SCENARIO</span>
+      </div>
+
+      <div class="panel-body" style="padding:12px;">
+        <div class="console-feed" id="consoleFeed">
+          <!-- Live events logged here -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // SIMULATION STATE ENGINE
+    // =========================================================================
+
+    const simulationDays = [
+      {
+        day: 0,
+        badge: "DAY 0 // DEPLOYMENT & ONBOARDING",
+        badgeColor: "rgba(6, 182, 212, 0.2)",
+        badgeTextColor: "var(--accent-cyan)",
+        title: "Platform Deployment & Topology Setup",
+        desc: "SCBAM deploys InvestmentTokenM and FundController. Token X configures AllowlistRegistryProxyV2 and FundComplianceHook. InnovestX and Dime onboard KYC investors.",
+        bullet: "SCBAM mints 5,000,000 tMMF and transfers 100% to FundController Vault (2.5M InnovestX, 2.5M Dime reserve).",
+        innovestXBuffer: "2,500,000.00",
+        dimeBuffer: "2,500,000.00",
+        innovestXShares: "0.00",
+        dimeShares: "0.00",
+        totalSupply: "5,000,000.00",
+        treasury: "0.00",
+        vaultBuffer: "5,000,000.00",
+        totalShares: "0.00",
+        queue: [],
+        wallets: [
+          { name: "SCBAM Treasury", broker: "SCBAM", tag: "tag-scbam", kyc: "ISSUER ADMIN", balance: "0.00", yield: "+0.00" },
+          { name: "FundController Vault", broker: "VAULT", tag: "tag-scbam", kyc: "100% RESERVE VAULT", balance: "5,000,000.00", yield: "+0.00" },
+          { name: "Alice", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Bob", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Dave", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Charlie", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Eve", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Frank", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" }
+        ],
+        logs: [
+          { time: "08:00:01", type: "log-ev-sec", text: "Token X AllowlistRegistryProxyV2 deployed at 0x8464...18bC" },
+          { time: "08:00:03", type: "log-ev-sec", text: "Corridor Matrix Opened: InnovestX <-> Dime [BIDIRECTIONAL]" },
+          { time: "08:00:05", type: "log-ev-ok", text: "InvestmentTokenM (tMMF) Minted: 5,000,000.00 tMMF (Transferred 100% to Vault)" },
+          { time: "08:00:08", type: "log-ev-req", text: "BrokerReserveFunded(INNOVESTX, 2,500,000.00 tMMF)" },
+          { time: "08:00:10", type: "log-ev-req", text: "BrokerReserveFunded(DIME, 2,500,000.00 tMMF)" }
+        ]
+      },
+      {
+        day: 1,
+        badge: "DAY 1 // SUBSCRIPTION & FIFO DRAIN",
+        badgeColor: "rgba(245, 158, 11, 0.2)",
+        badgeTextColor: "var(--accent-yellow)",
+        title: "Day T Subscriptions, Soft-Cancel & Batch Allotment",
+        desc: "5 investor subscription orders queued in strict FIFO sequence. Dave soft-cancels his 10,000 tMMF order in O(1) time before the 15:30 cut-off. Worker drains the queue, skips Dave, and allots shares directly from Vault.",
+        bullet: "270,000.00 tMMF allotted into circulation from Vault reserves.",
+        innovestXBuffer: "2,350,000.00",
+        dimeBuffer: "2,380,000.00",
+        innovestXShares: "150,000.00",
+        dimeShares: "120,000.00",
+        totalSupply: "5,000,000.00",
+        treasury: "0.00",
+        vaultBuffer: "4,730,000.00",
+        totalShares: "270,000.00",
+        queue: [
+          { id: "SUB-ALICE", user: "Alice", amount: "100k", status: "success", tag: "ALLOTTED" },
+          { id: "SUB-BOB", user: "Bob", amount: "50k", status: "success", tag: "ALLOTTED" },
+          { id: "SUB-DAVE", user: "Dave", amount: "10k", status: "cancelled", tag: "CANCELLED" },
+          { id: "SUB-CHARLIE", user: "Charlie", amount: "80k", status: "success", tag: "ALLOTTED" },
+          { id: "SUB-EVE", user: "Eve", amount: "40k", status: "success", tag: "ALLOTTED" }
+        ],
+        wallets: [
+          { name: "SCBAM Treasury", broker: "SCBAM", tag: "tag-scbam", kyc: "ISSUER ADMIN", balance: "0.00", yield: "+0.00" },
+          { name: "FundController Vault", broker: "VAULT", tag: "tag-scbam", kyc: "100% RESERVE VAULT", balance: "4,730,000.00", yield: "+0.00" },
+          { name: "Alice", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "100,000.00", yield: "+0.00" },
+          { name: "Bob", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "50,000.00", yield: "+0.00" },
+          { name: "Dave", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Charlie", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "80,000.00", yield: "+0.00" },
+          { name: "Eve", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "40,000.00", yield: "+0.00" },
+          { name: "Frank", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" }
+        ],
+        logs: [
+          { time: "09:15:00", type: "log-ev-req", text: "SubscriptionRequested(SUB-ALICE, Alice, 100,000 tMMF)" },
+          { time: "09:30:12", type: "log-ev-req", text: "SubscriptionRequested(SUB-BOB, Bob, 50,000 tMMF)" },
+          { time: "10:05:44", type: "log-ev-req", text: "SubscriptionRequested(SUB-DAVE, Dave, 10,000 tMMF)" },
+          { time: "14:00:22", type: "log-ev-burn", text: "SubscriptionCancelled(SUB-DAVE) -> Dave order soft-cancelled" },
+          { time: "15:30:00", type: "log-ev-ok", text: "processSubscriptions(100) -> 4 Orders Allotted directly from Vault, 1 Skipped" },
+          { time: "15:30:02", type: "log-ev-ok", text: "SharesAllotted: Alice +100k, Bob +50k, Charlie +80k, Eve +40k" }
+        ]
+      },
+      {
+        day: 2,
+        badge: "DAY 2 // SECONDARY P2P & HOOK GATING",
+        badgeColor: "rgba(139, 92, 246, 0.2)",
+        badgeTextColor: "var(--accent-purple)",
+        title: "Cross-Broker P2P Transfers & Compliance Gates",
+        desc: "Alice (InnovestX) transfers 20,000 tMMF to Charlie (Dime). The Compliance Hook verifies the open corridor and auto-syncs per-broker ledgers. Transfer to unwhitelisted wallet and dust transfers (< 10 tMMF) are strictly blocked.",
+        bullet: "InnovestX active shares auto-reduced (-20k); Dime active shares auto-increased (+20k).",
+        innovestXBuffer: "2,350,000.00",
+        dimeBuffer: "2,380,000.00",
+        innovestXShares: "130,000.00",
+        dimeShares: "140,000.00",
+        totalSupply: "5,000,000.00",
+        treasury: "0.00",
+        vaultBuffer: "4,730,000.00",
+        totalShares: "270,000.00",
+        queue: [],
+        wallets: [
+          { name: "SCBAM Treasury", broker: "SCBAM", tag: "tag-scbam", kyc: "ISSUER ADMIN", balance: "0.00", yield: "+0.00" },
+          { name: "FundController Vault", broker: "VAULT", tag: "tag-scbam", kyc: "100% RESERVE VAULT", balance: "4,730,000.00", yield: "+0.00" },
+          { name: "Alice", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "80,000.00", yield: "+0.00" },
+          { name: "Bob", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "50,000.00", yield: "+0.00" },
+          { name: "Dave", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Charlie", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "100,000.00", yield: "+0.00" },
+          { name: "Eve", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "35,000.00", yield: "+0.00" },
+          { name: "Frank", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "5,000.00", yield: "+0.00" }
+        ],
+        logs: [
+          { time: "11:20:00", type: "log-ev-sec", text: "beforeTokenTransfer(Alice -> Charlie, 20,000 tMMF): Corridor Verified ✅" },
+          { time: "11:20:01", type: "log-ev-ok", text: "afterTokenTransfer: BrokerSharesSynced(INNOVESTX -20k, DIME +20k)" },
+          { time: "13:45:10", type: "log-ev-ok", text: "Same-Broker P2P: Eve -> Frank (5,000 tMMF) [NATIVELY ALLOWED]" },
+          { time: "16:00:15", type: "log-ev-sec", text: "🛡️ REVERT: Transfer to unallowlisted wallet blocked by Proxy" },
+          { time: "16:15:30", type: "log-ev-sec", text: "🛡️ REVERT: Transfer leaving dust balance (< 10 tMMF) blocked by Hook" }
+        ]
+      },
+      {
+        day: 3,
+        badge: "DAY 3 // NAV ORACLE & PUSH YIELD",
+        badgeColor: "rgba(16, 185, 129, 0.2)",
+        badgeTextColor: "var(--accent-green)",
+        title: "Daily NAV Growth & Automated Batch Push Yield",
+        desc: "Fund NAV grows from 270,000 THB to 271,350 THB (+0.50% Daily Yield). Token X Oracle Bot publishes the NAV cycle, and Distributor Bot pushes +1,350 tMMF pro-rata yield from Vault reserves directly to holders.",
+        bullet: "Every holder receives auto-compounding shares. Vault buffer funds +1,350 tMMF distribution.",
+        innovestXBuffer: "2,349,350.00",
+        dimeBuffer: "2,379,300.00",
+        innovestXShares: "130,650.00",
+        dimeShares: "140,700.00",
+        totalSupply: "5,000,000.00",
+        treasury: "0.00",
+        vaultBuffer: "4,728,650.00",
+        totalShares: "271,350.00",
+        queue: [],
+        wallets: [
+          { name: "SCBAM Treasury", broker: "SCBAM", tag: "tag-scbam", kyc: "ISSUER ADMIN", balance: "0.00", yield: "+0.00" },
+          { name: "FundController Vault", broker: "VAULT", tag: "tag-scbam", kyc: "100% RESERVE VAULT", balance: "4,728,650.00", yield: "+0.00" },
+          { name: "Alice", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "80,400.00", yield: "+400.00" },
+          { name: "Bob", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "50,250.00", yield: "+250.00" },
+          { name: "Dave", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Charlie", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "100,500.00", yield: "+500.00" },
+          { name: "Eve", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "35,175.00", yield: "+175.00" },
+          { name: "Frank", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "5,025.00", yield: "+25.00" }
+        ],
+        logs: [
+          { time: "18:00:00", type: "log-ev-nav", text: "updateNav(CYCLE-DAY-3, 271,350 THB) -> DiffScaled: 0.50%" },
+          { time: "18:01:05", type: "log-ev-ok", text: "distributeToWallets([Alice, Bob, Charlie, Eve, Frank]) from Vault" },
+          { time: "18:01:07", type: "log-ev-ok", text: "Distributed: Alice +400.00, Bob +250.00, Charlie +500.00" },
+          { time: "18:01:08", type: "log-ev-ok", text: "Distributed: Eve +175.00, Frank +25.00 (Total: +1,350 tMMF)" }
+        ]
+      },
+      {
+        day: 4,
+        badge: "DAY 4 // REDEMPTIONS & T+1 BURN",
+        badgeColor: "rgba(239, 68, 68, 0.2)",
+        badgeTextColor: "var(--accent-red)",
+        title: "Asynchronous Redemptions, Refund & T+1 Burn",
+        desc: "Bob (25k) and Charlie (20k) submit Day T redemptions. Frank submits 2k, but his bank account bounces — SCBAM calls cancelRedeem to refund Frank. Day T+1 morning: SCBAM confirms fiat wires and executes lumpsum burn.",
+        bullet: "Total supply permanently reduced by 45,000 tMMF. Zero wei deviation.",
+        innovestXBuffer: "2,349,350.00",
+        dimeBuffer: "2,379,300.00",
+        innovestXShares: "105,650.00",
+        dimeShares: "120,700.00",
+        totalSupply: "4,955,000.00",
+        treasury: "0.00",
+        vaultBuffer: "4,728,650.00",
+        totalShares: "226,350.00",
+        queue: [],
+        wallets: [
+          { name: "SCBAM Treasury", broker: "SCBAM", tag: "tag-scbam", kyc: "ISSUER ADMIN", balance: "0.00", yield: "+0.00" },
+          { name: "FundController Vault", broker: "VAULT", tag: "tag-scbam", kyc: "100% RESERVE VAULT", balance: "4,728,650.00", yield: "+0.00" },
+          { name: "Alice", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "80,400.00", yield: "+0.00" },
+          { name: "Bob", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "25,250.00", yield: "+0.00" },
+          { name: "Dave", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Charlie", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "80,500.00", yield: "+0.00" },
+          { name: "Eve", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "35,175.00", yield: "+0.00" },
+          { name: "Frank", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "5,025.00", yield: "+0.00" }
+        ],
+        logs: [
+          { time: "14:15:00", type: "log-ev-burn", text: "requestRedeem(Bob, 25,000 tMMF) -> Locked in Escrow" },
+          { time: "14:30:00", type: "log-ev-burn", text: "requestRedeem(Charlie, 20,000 tMMF) -> Locked in Escrow" },
+          { time: "14:45:00", type: "log-ev-burn", text: "requestRedeem(Frank, 2,000 tMMF) -> Locked in Escrow" },
+          { time: "16:00:00", type: "log-ev-sec", text: "cancelRedeem(refIdFrank) -> Bank wire bounced, 2k refunded!" },
+          { time: "09:00:00", type: "log-ev-burn", text: "settleRedemptions([refBob, refCharlie]) (45,000 tMMF) by SCBAM [T+1]" }
+        ]
+      },
+      {
+        day: 5,
+        badge: "DAY 5 // FINAL INVARIANT AUDIT",
+        badgeColor: "rgba(16, 185, 129, 0.2)",
+        badgeTextColor: "var(--accent-green)",
+        title: "System Reconciliation & Invariant Conservation Audit",
+        desc: "Final audit over all token ledgers. Verified that Total Supply equals the exact sum of Treasury Balance, Active Circulating Shares, and Vault Buffer with 0 wei error.",
+        bullet: "Mathematical conservation confirmed across all 7 lifecycle stages.",
+        innovestXBuffer: "2,349,350.00",
+        dimeBuffer: "2,379,300.00",
+        innovestXShares: "105,650.00",
+        dimeShares: "120,700.00",
+        totalSupply: "4,955,000.00",
+        treasury: "0.00",
+        vaultBuffer: "4,728,650.00",
+        totalShares: "226,350.00",
+        queue: [],
+        wallets: [
+          { name: "SCBAM Treasury", broker: "SCBAM", tag: "tag-scbam", kyc: "ISSUER ADMIN", balance: "0.00", yield: "+0.00" },
+          { name: "FundController Vault", broker: "VAULT", tag: "tag-scbam", kyc: "100% RESERVE VAULT", balance: "4,728,650.00", yield: "+0.00" },
+          { name: "Alice", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "80,400.00", yield: "+0.00" },
+          { name: "Bob", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "25,250.00", yield: "+0.00" },
+          { name: "Dave", broker: "INNOVESTX", tag: "tag-innovestx", kyc: "ALLOWLISTED ✅", balance: "0.00", yield: "+0.00" },
+          { name: "Charlie", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "80,500.00", yield: "+0.00" },
+          { name: "Eve", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "35,175.00", yield: "+0.00" },
+          { name: "Frank", broker: "DIME", tag: "tag-dime", kyc: "ALLOWLISTED ✅", balance: "5,025.00", yield: "+0.00" }
+        ],
+        logs: [
+          { time: "12:00:00", type: "log-ev-sec", text: "AUDIT: Token Total Supply = 4,955,000.00 tMMF" },
+          { time: "12:00:01", type: "log-ev-sec", text: "AUDIT: SCBAM Treasury = 0.00 tMMF (100% Reserved in Vault)" },
+          { time: "12:00:02", type: "log-ev-sec", text: "AUDIT: Active Investor Shares = 226,350.00 tMMF" },
+          { time: "12:00:03", type: "log-ev-sec", text: "AUDIT: FundController Vault Buffer = 4,728,650.00 tMMF" },
+          { time: "12:00:04", type: "log-ev-ok", text: "🎉 VERDICT: EXACT MATCH (0 WEI MATHEMATICAL ERROR) ✅" }
+        ]
+      }
+    ];
+
+    let currentDayIndex = 0;
+    let isAutoPlaying = false;
+    let autoPlayTimer = null;
+
+    function renderDay(index) {
+      const data = simulationDays[index];
+      if (!data) return;
+
+      // Update Nav Buttons
+      for (let i = 0; i <= 5; i++) {
+        const btn = document.getElementById(`btnDay${i}`);
+        if (i === index) btn.classList.add("active");
+        else btn.classList.remove("active");
+      }
+
+      // Update Stage Narrative
+      document.getElementById("currentDayBadge").innerText = `DAY ${index} / 5`;
+      const badge = document.getElementById("stageBadgeStyle");
+      badge.innerText = data.badge;
+      badge.style.background = data.badgeColor;
+      badge.style.color = data.badgeTextColor;
+
+      document.getElementById("stageTitle").innerText = data.title;
+      document.getElementById("stageDesc").innerText = data.desc;
+      document.getElementById("eventBullet").innerText = data.bullet;
+
+      // Update Metrics
+      document.getElementById("innovestXBuffer").innerText = data.innovestXBuffer;
+      document.getElementById("dimeBuffer").innerText = data.dimeBuffer;
+      document.getElementById("innovestXShares").innerText = data.innovestXShares;
+      document.getElementById("dimeShares").innerText = data.dimeShares;
+      document.getElementById("totalActiveSharesLabel").innerText = `TOTAL SHARES: ${data.totalShares} tMMF`;
+
+      document.getElementById("invariantMath").innerText = `Total Supply (${data.totalSupply}) = Treasury (${data.treasury}) + Shares (${data.totalShares}) + Vault (${data.vaultBuffer})`;
+
+      // Render Queue
+      const queueStream = document.getElementById("queueStream");
+      queueStream.innerHTML = "";
+      if (data.queue.length === 0) {
+        queueStream.innerHTML = `<div style="font-size:12px; color:var(--text-muted); padding:10px 0; font-family:var(--font-mono);">[ No active subscription orders in queue ]</div>`;
+        document.getElementById("queueLengthBadge").innerText = "Queue Length: 0";
+      } else {
+        document.getElementById("queueLengthBadge").innerText = `Queue Length: ${data.queue.length}`;
+        data.queue.forEach(item => {
+          const div = document.createElement("div");
+          div.className = `queue-item ${item.status}`;
+          div.innerHTML = `
+            <div class="queue-tag">${item.tag}</div>
+            <div class="queue-amount">${item.user}: ${item.amount}</div>
+            <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-mono); margin-top:2px;">${item.id}</div>
+          `;
+          queueStream.appendChild(div);
+        });
+      }
+
+      // Render Wallets Table
+      const tableBody = document.getElementById("walletTableBody");
+      tableBody.innerHTML = "";
+      data.wallets.forEach(w => {
+        const tr = document.createElement("tr");
+        const yieldSpan = w.yield !== "+0.00" ? `<span class="yield-badge">${w.yield}</span>` : "";
+        tr.innerHTML = `
+          <td><span class="user-pill">${w.name}</span></td>
+          <td><span class="broker-tag ${w.tag}">${w.broker}</span></td>
+          <td style="font-family:var(--font-mono); font-size:11px; color:var(--text-dim);">${w.kyc}</td>
+          <td><span class="balance-num">${w.balance}</span></td>
+          <td>${yieldSpan || '<span style="color:var(--text-muted); font-family:var(--font-mono);">-</span>'}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      // Render Logs
+      const consoleFeed = document.getElementById("consoleFeed");
+      consoleFeed.innerHTML = "";
+      data.logs.forEach(l => {
+        const div = document.createElement("div");
+        div.className = "log-line";
+        div.innerHTML = `
+          <span class="log-time">[${l.time}]</span>
+          <span class="${l.type}">▶ ${l.text}</span>
+        `;
+        consoleFeed.appendChild(div);
+      });
+      consoleFeed.scrollTop = consoleFeed.scrollHeight;
+    }
+
+    function setDay(index) {
+      if (!Number.isInteger(index) || index < 0 || index >= simulationDays.length) return;
+      currentDayIndex = index;
+      renderDay(currentDayIndex);
+    }
+
+    function nextStep() {
+      if (currentDayIndex < 5) {
+        currentDayIndex++;
+        renderDay(currentDayIndex);
+      } else {
+        currentDayIndex = 0;
+        renderDay(currentDayIndex);
+      }
+    }
+
+    function prevStep() {
+      if (currentDayIndex > 0) {
+        currentDayIndex--;
+        renderDay(currentDayIndex);
+      }
+    }
+
+    function autoPlay() {
+      const btn = document.getElementById("autoBtn");
+      if (isAutoPlaying) {
+        clearInterval(autoPlayTimer);
+        isAutoPlaying = false;
+        btn.innerText = "⚡ Auto Play";
+      } else {
+        isAutoPlaying = true;
+        btn.innerText = "⏸ Pause";
+        autoPlayTimer = setInterval(() => {
+          nextStep();
+        }, 2500);
+      }
+    }
+
+    function resetSim() {
+      if (isAutoPlaying) autoPlay();
+      document.getElementById("consoleFeed").innerHTML = "";
+      currentDayIndex = 0;
+      renderDay(0);
+    }
+
+    // Initialize on Load
+    renderDay(0);
+  </script>
+</body>
+</html>

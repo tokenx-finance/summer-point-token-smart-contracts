@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SCBAM Tokenized Mutual Fund (tMMF) Smart Contract Architecture",
+    "output": "diagrams/tmmf-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "full-topology",
+        "label": "Complete Vault & Token Topology",
+        "focus": [
+          "scbam_admin",
+          "innovestx_broker",
+          "investor_wallets",
+          "fund_controller",
+          "investment_token",
+          "compliance_hook",
+          "corridor_gateway"
+        ],
+        "note": "High-level overview of institutional fund vault, token mechanics, and compliance infrastructure."
+      },
+      {
+        "id": "vault-operations",
+        "label": "SCBAM Fund Administration",
+        "focus": [
+          "scbam_admin",
+          "innovestx_broker",
+          "fund_controller",
+          "investment_token"
+        ],
+        "note": "Traces SCBAM minting, reserve funding, NAV updates, and Day T+1 redemption settlement burns."
+      },
+      {
+        "id": "transfer-compliance",
+        "label": "Investor Transfers & Corridor Gating",
+        "focus": [
+          "investor_wallets",
+          "investment_token",
+          "compliance_hook",
+          "corridor_gateway",
+          "fund_controller"
+        ],
+        "note": "Traces investor transfers gated by Broker Corridor Gateway and minimum holding rules."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "scbam_admin",
+      "type": "external",
+      "label": "SCBAM Fund Admin",
+      "sublabel": "Asset Management Company",
+      "pos": [40, 100],
+      "size": [180, 64],
+      "tag": "AM_ROLE"
+    },
+    {
+      "id": "innovestx_broker",
+      "type": "external",
+      "label": "InnovestX / Brokers",
+      "sublabel": "Selling Agent & Distributor",
+      "pos": [40, 260],
+      "size": [180, 64],
+      "tag": "SELLING_AGENT_ROLE"
+    },
+    {
+      "id": "investor_wallets",
+      "type": "external",
+      "label": "Investor Wallets",
+      "sublabel": "Custodial & Self-Custody",
+      "pos": [40, 420],
+      "size": [180, 64],
+      "tag": "KYC Whitelisted"
+    },
+    {
+      "id": "fund_controller",
+      "type": "backend",
+      "label": "FundController (Omnibus)",
+      "sublabel": "Reserve Vault & Settlement Executor",
+      "pos": [340, 180],
+      "size": [200, 72],
+      "tag": "RESERVE / NAV / REDEMPTIONS"
+    },
+    {
+      "id": "investment_token",
+      "type": "backend",
+      "label": "InvestmentTokenM (Mintable)",
+      "sublabel": "ERC20 (8 Decimals) & Shares",
+      "pos": [340, 380],
+      "size": [200, 72],
+      "tag": "Immutable Ledger"
+    },
+    {
+      "id": "corridor_gateway",
+      "type": "security",
+      "label": "AllowlistRegistryProxyV2",
+      "sublabel": "Multi-Broker Corridor & KYC Gateway",
+      "pos": [660, 180],
+      "size": [190, 64],
+      "tag": "IBrokerCorridorGateway"
+    },
+    {
+      "id": "compliance_hook",
+      "type": "security",
+      "label": "FundComplianceHook",
+      "sublabel": "ITransferHook Lifecycle Gating",
+      "pos": [660, 380],
+      "size": [190, 64],
+      "tag": "Min 10 tMMF Rule"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Blockchain Network",
+      "wraps": [
+        "fund_controller",
+        "investment_token",
+        "corridor_gateway",
+        "compliance_hook"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Institutional Compliance Perimeter",
+      "wraps": ["corridor_gateway", "compliance_hook"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "scbam-to-controller",
+      "from": "scbam_admin",
+      "to": "fund_controller",
+      "label": "Reserves, NAV & Settle",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [280, 200]
+    },
+    {
+      "id": "scbam-to-token",
+      "from": "scbam_admin",
+      "to": "investment_token",
+      "label": "Mint Supply",
+      "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "bottom",
+      "via": [[20, 132], [20, 510], [440, 510]],
+      "labelAt": [260, 510]
+    },
+    {
+      "id": "broker-to-controller",
+      "from": "innovestx_broker",
+      "to": "fund_controller",
+      "label": "Allot & Redeem",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "investor-to-token",
+      "from": "investor_wallets",
+      "to": "investment_token",
+      "label": "Token Transfers",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "token-to-controller",
+      "from": "investment_token",
+      "to": "fund_controller",
+      "label": "Fund Reserves",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [440, 305]
+    },
+    {
+      "id": "token-to-hook",
+      "from": "investment_token",
+      "to": "compliance_hook",
+      "label": "Transfer Hook",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [600, 425]
+    },
+    {
+      "id": "hook-to-gateway",
+      "from": "compliance_hook",
+      "to": "corridor_gateway",
+      "label": "Check Corridors",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [755, 305]
+    },
+    {
+      "id": "hook-to-controller",
+      "from": "compliance_hook",
+      "to": "fund_controller",
+      "label": "Sync Ledgers",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "right"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Consortium RBAC Matrix",
+      "items": [
+        "TokenX: DEFAULT_ADMIN_ROLE (Technical infrastructure & governance)",
+        "SCBAM: AM_ROLE (Token minting, reserves, NAV oracle, settlement burns)",
+        "InnovestX: SELLING_AGENT_ROLE (Allotments, queue, yield push distribution)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Custodial Model & Vault Escrow",
+      "items": [
+        "Custodial Mode: InnovestX KMS signs requestRedemption as user (msg.sender)",
+        "Non-Custodial Parity: Self-custody investors directly call approve & requestRedemption",
+        "Day T+1 Settlement: SCBAM AM_ROLE burns locked tokens from vault escrow"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Compliance & Corridor Gateway",
+      "items": [
+        "FundComplianceHook enforces pairwise corridor rules and minimum 10 tMMF balance",
+        "AllowlistRegistryProxyV2 resolves per-broker KYC and pairwise corridor permissions",
+        "Real-time sync ensures broker share ledgers match on-chain token movements"
+      ]
+    }
+  ]
+}

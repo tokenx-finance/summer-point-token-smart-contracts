@@ -2,7 +2,7 @@
 // TokenX Contracts v1.0.4 (extensions/ERC20AllowListableProxy.sol)
 pragma solidity 0.8.25;
 
-import {AllowlistRegistry} from "../contracts/AllowlistRegistry.sol";
+import {IAllowlistRegistry} from "../interfaces/IAllowlistRegistry.sol";
 
 /**
  * @dev Contract module which allows children to implement an allowlistable
@@ -31,7 +31,7 @@ abstract contract ERC20AllowListableProxy {
     function isAllowlist(address account) public view virtual returns (bool) {
         require(account != address(0), "ERC20AllowListableProxy: account cannot be zero address");
 
-        AllowlistRegistry registry = AllowlistRegistry(_registry);
+        IAllowlistRegistry registry = IAllowlistRegistry(_registry);
         return registry.isAllowlist(account);
     }
 
@@ -40,6 +40,7 @@ abstract contract ERC20AllowListableProxy {
      */
     function _setAllowlistRegistry(address newRegistry) internal virtual {
         require(address(newRegistry) != address(0), "ERC20AllowListableProxy: registry cannot be zero address");
+        require(newRegistry.code.length > 0, "ERC20AllowListableProxy: registry must be contract");
 
         address oldRegistry = _registry;
         _registry = newRegistry;

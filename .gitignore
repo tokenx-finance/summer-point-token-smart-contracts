@@ -18,3 +18,9 @@ node_modules
 
 # VSCode
 .vscode
+
+# Agents
+.agents
+
+# _bmad
+_bmad
